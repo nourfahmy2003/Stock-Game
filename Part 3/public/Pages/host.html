@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Host</title>
+    <link rel="stylesheet" href="host.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <div id="player-info" class="player-info"></div>
+        <button id="switch">Switch to Player</button>
+        <button id="logout">Logout</button>
+    </header>
+    <main>
+        <div class="container">
+            <div id="player-list"></div>
+            <button id="create-game">Create Game</button>
+        </div>
+        
+        <button id="end-game">End Game</button>
+        <div id="create-game-popup" class="popup">
+            <div class="popup-content">
+                <h2>Create a Game</h2>
+                <form id="create-game-form">
+                    <label for="game-name">Game Name:</label><br>
+                    <input type="text" id="game-name" name="game-name"><br><br>
+                    <input type="submit" value="Submit">
+                </form>
+            </div>
+        </div>
+        <div id="portfolio-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div id="portfolio-info"></div>
+                <canvas id="pie-chart"></canvas>
+            </div>
+        </div>
+    </main>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="./js/change_user.js"></script>
+    <script src="./js/create_game_popup.js"></script>
+    <script src="./js/player_list.js"></script>
+    <script src="./js/logout.js"></script>
+    
+    <script>
+        // Function to hide the create game button if the player has a current game
+        function hideCreateGameButton(hasCurrentGame) {
+            if (hasCurrentGame) {
+                $('#create-game').hide(); // Hide the create game button
+            } else {
+                $('#create-game').show(); // Show the create game button
+            }
+        }
+
+        // Fetch player info and update player info
+        fetch('/info')
+            .then(response => response.json())
+            .then(data => {
+                const playerName = data.name;
+                const hasCurrentGame = data.cur_game;
+                updatePlayerInfo(playerName, hasCurrentGame);
+            })
+            .catch(error => console.error('Error fetching player info:', error));
+
+        // Function to update player info
+        function updatePlayerInfo(playerName, hasCurrentGame) {
+            const playerInfo = $('#player-info');
+            playerInfo.html(`<p>Greeting: Hey, ${playerName}</p><p>Current Game: ${hasCurrentGame}</p>`);
+            hideCreateGameButton(hasCurrentGame); // Hide or show create game button based on current game
+        }
+
+        // Populate the player list and set up event handlers
+        $(document).ready(function() {
+            $('#player-list').on('click', '.player', function() {
+                const playerName = $(this).text();
+                showPortfolio(playerName);
+            });
+
+            populatePlayerList(); // Populate the player list when the page loads
+        });
+
+        $(document).ready(function() {
+            $('#end-game').click(function() {
+                $.ajax({
+                  url: '/game_winner',
+                  method: 'GET',
+                  success: function(response) {
+                      alert(JSON.stringify(response)); // Display pop-up alert with the JSON message sent
+                  },
+                  error: function(xhr, status, error) {
+                      console.error('Error purchasing stock:', error);
+                      alert('Error purchasing stock');
+                  }
+              });
+            });
+        });
+    </script>
+</body>
+</html>

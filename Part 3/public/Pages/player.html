@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="player.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js library -->
+</head>
+<body>
+    <header>
+        <div id="player-info" class="player-info"></div>
+        <button id="switch">Switch to Host</button>
+        <button id="logout">Logout</button>
+    </header>
+    <div class="container">
+        <div class="current_portfolio">
+            <h2>Portfolio</h2>
+            <canvas id="user-pie-chart" width="400" height="400"></canvas> <!-- Placeholder for pie chart -->
+            <ul id="portfolio-list"></ul> <!-- Placeholder for portfolio list -->
+        </div>
+        <div class="stock-form">
+            <h2>Check Stock Price</h2>
+            <form id="stock-form">
+                <input type="text" id="stock-symbol" placeholder="Enter Stock Symbol" required>
+                <button type="submit">Get Price</button>
+            </form>
+            <div id="stock-price"></div> <!-- Placeholder for displaying stock price -->
+
+            <!-- Form for purchasing stock -->
+            <form id="purchase-form">
+                <h2>Purchase Stock</h2>
+                <input type="text" id="purchase-symbol" name="symbol" placeholder="Enter Stock Symbol" required>
+                <input type="number" id="purchase-quantity" name="quantity" placeholder="Quantity" required>
+                <button type="submit">Buy Stock</button>
+            </form>
+
+            <form id="selling-form">
+              <h2>Sell Stock</h2>
+              <input type="text" id="selling-symbol" name="symbol" placeholder="Enter Stock Symbol" required>
+              <input type="number" id="selling-quantity" name="quantity" placeholder="Quantity" required>
+              <button type="submit">sell Stock</button>
+          </form>
+        </div>
+        <div id="player-list"></div>
+        <div id="game-list-container" class="game-list-container">
+          <h2>Available Games</h2>
+          <ul id="game-list" class="game-list">
+              <!-- List of games will be dynamically added here -->
+          </ul>
+      </div>
+    </div>
+    <div id="portfolio-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="portfolio-info"></div>
+            <canvas id="pie-chart"></canvas>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="./js/change_user.js"></script>
+    <script src="./js/player_list.js"></script>
+    <script src="./js/logout.js"></script>
+    <script>
+      
+        // Fetch data from server
+        $(document).ready(function() {
+            fetch('/info')
+                .then(response => response.json())
+                .then(data => {
+                    // Update HTML content with retrieved data
+                    const playerName = data.name;
+                    const hasCurrentGame = data.cur_game;
+                    updatePlayerInfo(playerName, hasCurrentGame);
+                    fetchPortfolio();
+                    
+                })
+                .catch(error => console.error('Error fetching data:', error));
+
+            // Function to update player info
+            function updatePlayerInfo(playerName, hasCurrentGame) {
+                const playerInfo = $('#player-info');
+                playerInfo.html(`<p>Greeting: Hey, ${playerName}</p><p>Current Game: ${hasCurrentGame}</p>`)
+                if (!hasCurrentGame) {
+                    $('#game-list-container').show();
+                    populateGameList(); // Populate the game list
+                } else {
+                    $('#game-list-container').hide();
+                };
+            }
+          });
+
+        // Populate player list and handle click events
+        $(document).ready(function() {
+            $('#player-list').on('click', '.player', function() {
+                const playerName = $(this).text();
+                showPortfolio(playerName);
+            });
+
+            populatePlayerList(); // Populate the player list when the page loads
+        });
+
+        // Function to handle form submission for fetching stock price
+        $(document).ready(function() {
+            $('#stock-form').submit(function(event) {
+                event.preventDefault(); // Prevent default form submission
+                const symbol = $('#stock-symbol').val(); // Get the entered stock symbol
+                fetchStockPrice(symbol); // Fetch the stock price
+            });
+        });
+
+        // Function to fetch stock price
+        async function fetchStockPrice(symbol) {
+            try {
+                const response = await fetch(`/stock/${symbol}`);
+                const data = await response.json();
+
+                if (data.price) {
+                    $('#stock-price').text(`Price of ${symbol}: ${data.price}`);
+                } else {
+                    $('#stock-price').text('Stock symbol not found');
+                }
+            } catch (error) {
+                console.error('Error fetching stock price:', error);
+                $('#stock-price').text('Error fetching stock price');
+            }
+        }
+
+        // Function to handle form submission for purchasing stock
+        $(document).ready(function() {
+            $('#purchase-form').submit(function(event) {
+                event.preventDefault(); // Prevent default form submission
+                const symbol = $('#purchase-symbol').val(); // Get the entered stock symbol
+                const quantity = $('#purchase-quantity').val(); // Get the entered quantity
+                purchaseStock(symbol, quantity); // Purchase the stock
+            });
+        });
+
+        // Function to purchase stock
+                  // Function to purchase stock
+          function purchaseStock(symbol, quantity) {
+              $.ajax({
+                  url: '/buy',
+                  method: 'POST',
+                  data: { symbol: symbol, quantity: quantity },
+                  success: function(response) {
+                      alert(JSON.stringify(response)); // Display pop-up alert with the JSON message sent
+                      fetchPortfolio(); // Reload portfolio and update pie chart
+                  },
+                  error: function(xhr, status, error) {
+                      console.error('Error purchasing stock:', error);
+                      alert('Error purchasing stock');
+                  }
+              });
+          }
+
+          $(document).ready(function() {
+            $('#selling-form').submit(function(event) {
+                event.preventDefault(); // Prevent default form submission
+                const symbol = $('#selling-symbol').val(); // Get the entered stock symbol
+                const quantity = $('#selling-quantity').val(); // Get the entered quantity
+                sellStock(symbol, quantity); // Purchase the stock
+            });
+        });
+
+        // Function to purchase stock
+                  // Function to purchase stock
+          function sellStock(symbol, quantity) {
+              $.ajax({
+                  url: '/sell',
+                  method: 'POST',
+                  data: { symbol: symbol, quantity: quantity },
+                  success: function(response) {
+                      alert(JSON.stringify(response)); // Display pop-up alert with the JSON message sent
+                      fetchPortfolio(); // Reload portfolio and update pie chart
+                  },
+                  error: function(xhr, status, error) {
+                      console.error('Error purchasing stock:', error);
+                      alert('Error purchasing stock');
+                  }
+              });
+          }
+
+
+          // Function to fetch and update portfolio data including canvas
+          function fetchPortfolio() {
+              fetch('/info')
+                  .then(response => response.json())
+                  .then(data => {
+                      const portfolioList = $('#portfolio-list');
+                      portfolioList.empty(); // Clear existing portfolio list
+                      data.portfolio.forEach(stock => {
+                          const listItem = $('<li></li>').text(stock.symbol + ': ' + stock.quantity + ' bought at price: ' + stock.stockPrice);
+                          portfolioList.append(listItem);
+                      });
+
+                      // Update data for the pie chart
+                      const ctx = $('#user-pie-chart');
+                      const labels = ['Cash'];
+                      const dataValues = [data.balance];
+                      data.portfolio.forEach(stock => {
+                          labels.push(stock.symbol);
+                          dataValues.push(stock.cost);
+                      });
+
+                      // Update the pie chart
+                      if (window.userPieChart) {
+                          window.userPieChart.data.labels = labels;
+                          window.userPieChart.data.datasets[0].data = dataValues;
+                          window.userPieChart.update();
+                      } else {
+                          window.userPieChart = new Chart(ctx, {
+                              type: 'pie',
+                              data: {
+                                  labels: labels,
+                                  datasets: [{
+                                      data: dataValues,
+                                      backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#32CD32', '#8A2BE2'] // Set custom colors for each segment
+                                  }]
+                              }
+                          });
+                      }
+                  })
+                  .catch(error => console.error('Error fetching portfolio:', error));
+          }
+          function populateGameList() {
+    const gameList = $('#game-list');
+    gameList.empty(); // Clear existing game list
+
+    // Make a GET request to fetch the list of games
+    $.ajax({
+        url: '/games',
+        method: 'GET',
+        success: function(response) {
+            // Response should contain an array of game names
+            response.forEach(game => {
+                const listItem = $('<li></li>').text(game);
+                // Attach a click event listener to each list item
+                listItem.click(function() {
+                    // Make a POST request to join the selected game
+                    $.ajax({
+                        url: `/join_game/${game}`,
+                        method: 'POST',
+                        success: function(joinResponse) {
+                            // Handle successful join
+                            console.log(`Joined game: ${game}`);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error joining game:', error);
+                            // Handle error
+                        }
+                    });
+                });
+                gameList.append(listItem);
+            });
+        },
+        error: function(xhr, status, error) {
+            console.error('Error fetching game list:', error);
+            // Handle error
+        }
+    });
+}
+
+
+    </script>
+</body>
+</html>
