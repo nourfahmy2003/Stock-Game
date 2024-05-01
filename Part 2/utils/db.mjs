@@ -1,36 +1,29 @@
 import { MongoClient } from 'mongodb';
-const uri ="mongodb://localhost:27017";
-const client = new MongoClient(uri, { useUnifiedTopology: true });
-var db;
 
-/**
- * A function to stablish a connection with a MongoDB instance.
- */
+// MongoDB Atlas connection string with the specified database
+const uri = "mongodb+srv://nourfahmy2003:fahmynour68@cluster0.sr6q9k6.mongodb.net";
+
+const client = new MongoClient(uri, { useUnifiedTopology: true });
+
+let db;
+
 export async function connectToDB() {
     try {
-        // Connect the client to the server
-        await client.connect();
-        // Our db name is going to be contacts-db
-        db = await client.db('Stocks-game');
-        // let object = await db.collection('sections').find({"subject": "MATH"}).toArray();
-        // console.log(object)
-        console.log("Connected successfully to mongoDB");  
+        await client.connect(); // Connect to MongoDB Atlas
+        db = client.db('Stock-games'); // Set the target database
+        console.log("Connected successfully to MongoDB Atlas");  
     } catch (err) {
-        throw err; 
+        console.error("Connection failed:", err); // Handle connection errors
     } 
 }
-/**
- * This method just returns the database instance
- * @returns A Database instance
- */
+
 export async function getDb() {
-    return db;
+    return db; // Return the database instance
 }
 
-export async function closeDBConnection(){
-    await client.close();
-    return 'Connection closed';
-};
+export async function closeDBConnection() {
+    await client.close(); // Close the database connection
+    console.log('Connection closed');
+}
 
-
-export default {connectToDB, getDb, closeDBConnection}
+export default { connectToDB, getDb, closeDBConnection };
